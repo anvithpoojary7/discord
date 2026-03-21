@@ -4,7 +4,7 @@ const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const auth=require('./routes/authroutes');
 const serverRoutes=require('./routes/serverRoutes');
-
+const messageRoutes = require("./routes/messageRoutes");
 dotenv.config();
 
 const app = express();
@@ -20,7 +20,7 @@ app.get("/", (req, res) => {
 app.use("/uploads", express.static("uploads"));
 app.use("/api/auth", auth);
 app.use('/api/servers',serverRoutes);
-
+app.use("/api/messages", messageRoutes);
 
 
 const PORT =3000;

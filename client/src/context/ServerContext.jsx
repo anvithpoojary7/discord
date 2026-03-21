@@ -39,7 +39,7 @@ export function ServerProvider({ children }) {
       });
       const data = await res.json();
       setChannels(data);
-
+      
       // Auto-select the top channel
       if (data.length > 0) {
         setSelectedChannel(data[0]);

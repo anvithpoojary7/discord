@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
 import { PlusCircle, Gift, StickyNote, Smile, Ghost } from 'lucide-react';
+import { useServer } from "../context/ServerContext"; // ✅ ADD
 
 function MessageInput({ onSend }) {
   const [text, setText] = useState('');
+  const { selectedChannel } = useServer(); // ✅ ADD
 
   const handleSend = (e) => {
     e.preventDefault();
+
     if (text.trim() === '') return;
-    onSend(text);
+    if (!selectedChannel) return; // ✅ safety
+
+    onSend(text); // 🔥 call parent (ChatArea API logic)
     setText('');
   };
 
@@ -22,7 +27,7 @@ function MessageInput({ onSend }) {
         <input
           value={text}
           onChange={e => setText(e.target.value)}
-          placeholder="Message #general"
+          placeholder={`Message #${selectedChannel?.name || "general"}`} // ✅ dynamic
           className="flex-1 bg-transparent text-[#dbdee1] focus:outline-none placeholder-[#72767d]"
         />
 
