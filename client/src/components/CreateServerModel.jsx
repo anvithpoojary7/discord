@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 function CreateServerModal({ closeModal }) {
 
@@ -16,8 +15,8 @@ function CreateServerModal({ closeModal }) {
           <button onClick={closeModal}>✕</button>
         </div>
 
+        {/* OPTIONS */}
         {step === "options" && (
-
           <>
             <h2 className="text-xl font-bold mb-4 text-center">
               Create Your Server
@@ -40,22 +39,32 @@ function CreateServerModal({ closeModal }) {
 
             <div className="text-center">Have an invite already?</div>
 
-            <div className="bg-gray-800 p-3 rounded cursor-pointer hover:bg-gray-700 text-center border border-indigo-500">
+            <div
+              onClick={() => setStep("join")}
+              className="bg-gray-800 p-3 rounded cursor-pointer hover:bg-gray-700 text-center border border-indigo-500"
+            >
               Join Server
             </div>
-
           </>
         )}
 
-       {step === "create" && (
-  <CreateServerForm 
-    goBack={() => setStep("options")} 
-    closeModal={closeModal}
-  />
-)}
+        {/* CREATE */}
+        {step === "create" && (
+          <CreateServerForm
+            goBack={() => setStep("options")}
+            closeModal={closeModal}
+          />
+        )}
+
+        {/* JOIN */}
+        {step === "join" && (
+          <JoinServerForm
+            goBack={() => setStep("options")}
+            closeModal={closeModal}
+          />
+        )}
 
       </div>
-
     </div>
   );
 }
@@ -64,9 +73,9 @@ export default CreateServerModal;
 
 
 
-function CreateServerForm({ goBack,closeModal }) {
+// ================= CREATE SERVER =================
 
-  const navigate = useNavigate();
+function CreateServerForm({ goBack, closeModal }) {
 
   const [serverName, setServerName] = useState("");
   const [image, setImage] = useState(null);
@@ -74,24 +83,18 @@ function CreateServerForm({ goBack,closeModal }) {
 
   const [status, setStatus] = useState("");
   const [message, setMessage] = useState("");
-
+  const [inviteCode, setInviteCode] = useState(""); // ✅ important
 
   const handleImageChange = (e) => {
-
     const file = e.target.files[0];
     if (!file) return;
 
     setImage(file);
-
-    const imageUrl = URL.createObjectURL(file);
-    setPreview(imageUrl);
+    setPreview(URL.createObjectURL(file));
   };
 
-
   const createServer = async () => {
-
     try {
-
       setStatus("loading");
       setMessage("Creating server...");
 
@@ -99,150 +102,175 @@ function CreateServerForm({ goBack,closeModal }) {
 
       const formData = new FormData();
       formData.append("name", serverName);
-
-      if (image) {
-        formData.append("image", image);
-      }
+      if (image) formData.append("image", image);
 
       const res = await fetch("http://localhost:3000/api/servers", {
-
         method: "POST",
-
         headers: {
           Authorization: `Bearer ${token}`,
         },
-
         body: formData
-
       });
 
       const data = await res.json();
-
+     console.log(data);
+     
       if (res.ok) {
-
         setStatus("success");
-setMessage("Server created successfully 🎉");
-
-setTimeout(() => {
-  closeModal();
-}, 1000);
-       
+        setInviteCode(data.inviteCode); // ✅ store code
+        setMessage("Server created 🎉 Copy the code below");
 
       } else {
-
         setStatus("error");
         setMessage(data.message || "Server creation failed");
-
       }
 
-    } catch (error) {
-
+    } catch {
       setStatus("error");
       setMessage("Something went wrong");
-
     }
   };
 
-
   return (
-
     <div className="text-white">
 
       <h2 className="text-2xl font-bold text-center mb-2">
         Customize Your Server
       </h2>
 
-      <p className="text-sm text-gray-400 text-center mb-6">
-        Give your new server a personality with a name and an icon.
-      </p>
-
-
-      {/* IMAGE UPLOAD */}
+      {/* IMAGE */}
       <div className="flex justify-center mb-6">
-
-        <label className="relative cursor-pointer">
-
+        <label className="cursor-pointer">
           <div className="w-24 h-24 rounded-full border-2 border-dashed border-gray-500 flex items-center justify-center overflow-hidden">
-
             {preview ? (
-              <img
-                src={preview}
-                alt="server preview"
-                className="w-full h-full object-cover"
-              />
+              <img src={preview} className="w-full h-full object-cover" />
             ) : (
-              <div className="flex flex-col items-center text-gray-400">
-                <span className="text-xl">📷</span>
-                <span className="text-xs">UPLOAD</span>
-              </div>
+              <div className="text-gray-400">📷</div>
             )}
-
           </div>
-
-          <div className="absolute bottom-0 right-0 bg-indigo-600 w-7 h-7 rounded-full flex items-center justify-center text-white text-sm">
-            +
-          </div>
-
-          <input
-            type="file"
-            className="hidden"
-            onChange={handleImageChange}
-          />
-
+          <input type="file" className="hidden" onChange={handleImageChange} />
         </label>
-
       </div>
 
-
-      {/* SERVER NAME */}
-      <div className="mb-4">
-
-        <label className="text-xs text-gray-400 uppercase">
-          Server Name *
-        </label>
-
-        <input
-          type="text"
-          value={serverName}
-          onChange={(e) => setServerName(e.target.value)}
-          className="w-full mt-2 p-3 rounded-md bg-gray-800 border border-gray-700 focus:border-indigo-500 outline-none"
-        />
-
-      </div>
-
+      {/* NAME */}
+      <input
+        value={serverName}
+        onChange={(e) => setServerName(e.target.value)}
+        placeholder="Server name"
+        className="w-full p-3 mb-4 bg-gray-800 rounded"
+      />
 
       {/* MESSAGE */}
       {message && (
-
-        <div className={`text-sm mb-4 text-center ${
-          status === "success"
-            ? "text-green-400"
-            : status === "error"
-            ? "text-red-400"
-            : "text-gray-400"
-        }`}>
+        <div className="text-center mb-3 text-green-400">
           {message}
         </div>
-
       )}
 
+      {/* 🔥 INVITE CODE DISPLAY */}
+      {inviteCode && (
+        <div className="text-center mb-4">
+          <p className="text-sm text-gray-400">Invite Code:</p>
+
+          <div className="bg-gray-800 p-2 rounded font-mono">
+            {inviteCode}
+          </div>
+
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(inviteCode);
+              alert("Copied!");
+            }}
+            className="mt-2 bg-indigo-600 px-3 py-1 rounded"
+          >
+            Copy Code
+          </button>
+        </div>
+      )}
 
       {/* BUTTONS */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between">
+        <button onClick={goBack}>Back</button>
 
-        <button
-          onClick={goBack}
-          className="text-gray-400 hover:text-white"
-        >
-          Back
+        <button onClick={createServer}>
+          Create
         </button>
+      </div>
 
-        <button
-          onClick={createServer}
-          disabled={status === "loading"}
-          className="bg-indigo-600 hover:bg-indigo-500 px-6 py-2 rounded-md disabled:opacity-50"
-        >
-          {status === "loading" ? "Creating..." : "Create"}
+    </div>
+  );
+}
+
+
+// ================= JOIN SERVER =================
+
+function JoinServerForm({ goBack, closeModal }) {
+
+  const [code, setCode] = useState("");
+  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState("");
+
+  const handleJoin = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch("http://localhost:3000/api/servers/join", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ inviteCode: code.trim() }), // ✅ trim fix
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setStatus("success");
+        setMessage("Joined server successfully 🎉");
+
+        setTimeout(() => {
+          closeModal();
+          window.location.reload();
+        }, 1000);
+
+      } else {
+        setStatus("error");
+        setMessage(data.message || "Invalid code");
+      }
+
+    } catch {
+      setStatus("error");
+      setMessage("Something went wrong");
+    }
+  };
+
+  return (
+    <div className="text-white">
+
+      <h2 className="text-xl font-bold text-center mb-4">
+        Join a Server
+      </h2>
+
+      <input
+        value={code}
+        onChange={(e) => setCode(e.target.value)}
+        placeholder="Enter invite code"
+        className="w-full p-3 rounded-md bg-gray-800 mb-4"
+      />
+
+      {message && (
+        <div className="text-center mb-4 text-green-400">
+          {message}
+        </div>
+      )}
+
+      <div className="flex justify-between">
+
+        <button onClick={goBack}>Back</button>
+
+        <button onClick={handleJoin}>
+          Join
         </button>
 
       </div>

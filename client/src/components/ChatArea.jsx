@@ -6,20 +6,49 @@ import {
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import { useServer } from "../context/ServerContext";
+import socket from "../../socket"; // 🔥 IMPORTANT
 
 const ChatArea = () => {
 
   const { selectedServer, selectedChannel } = useServer();
-
   const [messages, setMessages] = useState([]);
 
-  // ✅ FETCH MESSAGES WHEN CHANNEL CHANGES
+  // 🔥 JOIN CHANNEL + FETCH MESSAGES
   useEffect(() => {
     if (!selectedChannel) return;
+
+    // join socket room
+    socket.emit("join_channel", selectedChannel._id);
+
+    // fetch old messages
     fetchMessages(selectedChannel._id);
+
   }, [selectedChannel]);
 
-  // ✅ FETCH FUNCTION
+  // 🔥 RECEIVE REALTIME MESSAGES
+  useEffect(() => {
+
+    const handleReceive = (msg) => {
+      const newMsg = {
+        type: msg.type,
+        user: msg.username,
+        text: msg.text,
+        timestamp: new Date(msg.createdAt).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit"
+        })
+      };
+
+      setMessages(prev => [...prev, newMsg]);
+    };
+
+    socket.on("receive_message", handleReceive);
+
+    return () => socket.off("receive_message", handleReceive);
+
+  }, []);
+
+  // 🔥 FETCH MESSAGES
   const fetchMessages = async (channelId) => {
     try {
       const token = localStorage.getItem("token");
@@ -50,12 +79,12 @@ const ChatArea = () => {
     }
   };
 
-  // ✅ SEND MESSAGE
+  // 🔥 SEND MESSAGE (REALTIME)
   const addMessage = async (text) => {
     try {
       const token = localStorage.getItem("token");
 
-      await fetch(
+      const res = await fetch(
         `http://localhost:3000/api/messages/${selectedChannel._id}`,
         {
           method: "POST",
@@ -67,8 +96,24 @@ const ChatArea = () => {
         }
       );
 
-      // refresh messages
-      fetchMessages(selectedChannel._id);
+      const savedMsg = await res.json();
+
+      // 🔥 EMIT TO SOCKET (other users)
+      socket.emit("send_message", {
+        ...savedMsg,
+        channelId: selectedChannel._id
+      });
+
+      // 🔥 UPDATE OWN UI instantly
+      setMessages(prev => [...prev, {
+        type: savedMsg.type,
+        user: savedMsg.username,
+        text: savedMsg.text,
+        timestamp: new Date(savedMsg.createdAt).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit"
+        })
+      }]);
 
     } catch (err) {
       console.error("Error sending message", err);

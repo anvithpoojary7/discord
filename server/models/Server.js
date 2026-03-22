@@ -21,7 +21,12 @@ const serverSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     }
-  ]
+  ],
+  inviteCode:{
+     type:String,
+     unique:true,
+     required:true
+  }
 
 }, { timestamps: true });
 

@@ -13,6 +13,10 @@ exports.sendMessage=async(req,res)=>{
                     });
             
             await message.save();
+           
+            const io=req.app.get("io");
+            io.to(channelId).emit("recieve message",message);
+            
 
             res.status(201).json(message);
         }catch(error){
