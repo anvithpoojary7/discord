@@ -29,7 +29,8 @@ const handleLogin = async () => {
   if(res.ok){
 
     localStorage.setItem("token", data.token);
-
+    localStorage.setItem("userId", data.user.id);       
+localStorage.setItem("username", data.user.username)
     navigate("/chat");
 
   } else {
